@@ -23,6 +23,6 @@
     "@lynx-js/rspeedy": "^0.8.3"
   },
   "engines": {
-    "node": ">=18"
+    "node": "18.x"
   }
 }
