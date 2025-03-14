@@ -8,7 +8,7 @@
     "network": true
   },
   "scripts": {
-    "build": "rspeedy build --output public",
+    "build": "rspeedy build && mkdir -p public && cp -r dist/* public/",
     "dev": "rspeedy dev",
     "preview": "rspeedy preview"
   },
