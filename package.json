@@ -8,7 +8,7 @@
     "network": true
   },
   "scripts": {
-    "build": "rspeedy build",
+    "build": "rspeedy build --output public",
     "dev": "rspeedy dev",
     "preview": "rspeedy preview"
   },
