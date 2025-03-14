@@ -1,0 +1,12 @@
+body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+  }
+  button {
+    padding: 10px;
+    margin: 5px;
+  }
+  #device-list, #file-picker {
+    display: block;
+    margin: 10px 0;
+  }

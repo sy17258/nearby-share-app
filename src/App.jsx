@@ -24,33 +24,22 @@ const NearbyShareModule = {
         });
       }, 5000);
     }
-    // Return a cleanup function to prevent memory leaks
-    return () => {
-      console.log(`Removed listener for ${event}`);
-    };
   },
   startScanning: (callback) => {
     console.log('Started scanning for devices');
     // Simulate finding devices
-    const timeout1 = setTimeout(() => {
+    setTimeout(() => {
       callback({
         id: 'device-1',
         name: 'Android Phone'
       });
     }, 2000);
-    const timeout2 = setTimeout(() => {
+    setTimeout(() => {
       callback({
         id: 'device-2',
         name: 'MacBook Pro'
       });
     }, 3500);
-    
-    // Return a cleanup function
-    return () => {
-      clearTimeout(timeout1);
-      clearTimeout(timeout2);
-      console.log('Stopped scanning');
-    };
   },
   sendFile: (filePath, deviceId) => {
     console.log(`Sending file ${filePath} to device ${deviceId}`);
@@ -72,32 +61,14 @@ export function App() {
   const [selectedDevice, setSelectedDevice] = useState(null)
   const [fileToSend, setFileToSend] = useState(null)
   const [incomingTransfers, setIncomingTransfers] = useState([])
-  const [showUI, setShowUI] = useState(false)
   
   // Use the mock module instead of trying to get it from NativeModules
   useEffect(() => {
     console.info('Hello, ReactLynx')
-    try {
-      NearbyShareModule.init()
-      const cleanup = NearbyShareModule.on('incomingTransfer', (transfer) => {
-        setIncomingTransfers((prev) => [...prev, transfer])
-      })
-      
-      // Show UI after a short delay to ensure splash screen is visible
-      const timer = setTimeout(() => {
-        setShowUI(true);
-      }, 2000);
-      
-      // Return cleanup function
-      return () => {
-        if (typeof cleanup === 'function') {
-          cleanup();
-        }
-        clearTimeout(timer);
-      };
-    } catch (error) {
-      console.error('Error initializing NearbyShareModule:', error);
-    }
+    NearbyShareModule.init()
+    NearbyShareModule.on('incomingTransfer', (transfer) => {
+      setIncomingTransfers((prev) => [...prev, transfer])
+    })
   }, [])
 
   const onTap = useCallback(() => {
@@ -105,19 +76,9 @@ export function App() {
   }, [alterLogo])
 
   const startScanning = () => {
-    try {
-      const stopScanning = NearbyShareModule.startScanning((device) => {
-        setDevices((prev) => {
-          // Avoid duplicate devices
-          if (prev.some(d => d.id === device.id)) {
-            return prev;
-          }
-          return [...prev, device];
-        });
-      });
-    } catch (error) {
-      console.error('Error starting scanning:', error);
-    }
+    NearbyShareModule.startScanning((device) => {
+      setDevices((prev) => [...prev, device])
+    })
   }
 
   const selectDevice = (device) => {
@@ -130,28 +91,16 @@ export function App() {
 
   const sendFile = () => {
     if (selectedDevice && fileToSend) {
-      try {
-        NearbyShareModule.sendFile(fileToSend, selectedDevice.id)
-      } catch (error) {
-        console.error('Error sending file:', error);
-      }
+      NearbyShareModule.sendFile(fileToSend, selectedDevice.id)
     }
   }
 
   const acceptTransfer = (transferId) => {
-    try {
-      NearbyShareModule.acceptTransfer(transferId)
-    } catch (error) {
-      console.error('Error accepting transfer:', error);
-    }
+    NearbyShareModule.acceptTransfer(transferId)
   }
 
   const rejectTransfer = (transferId) => {
-    try {
-      NearbyShareModule.rejectTransfer(transferId)
-    } catch (error) {
-      console.error('Error rejecting transfer:', error);
-    }
+    NearbyShareModule.rejectTransfer(transferId)
   }
 
   return (
@@ -159,7 +108,7 @@ export function App() {
       <view className='Background' />
       <view className='App'>
         <view className='Banner'>
-          <view className='Logo' bindtap={onTap}>
+          <view className='Logo' onClick={onTap}>
             {alterLogo
               ? <image src={reactLynxLogo} className='Logo--react' />
               : <image src={lynxLogo} className='Logo--lynx' />}
@@ -168,118 +117,182 @@ export function App() {
           <text className='Subtitle'>File Transfer between Mac and Android</text>
         </view>
         
-        {showUI && (
-          <view className='Content'>
-            <button 
-              onClick={startScanning}
-              style={{
-                padding: '10px 20px',
-                margin: '10px 0',
-                backgroundColor: '#4285f4',
-                color: 'white',
-                borderRadius: '4px'
-              }}
-            >
+        <view className='Content' style={{ width: '100%', padding: '0 20px' }}>
+          {/* Scan Button */}
+          <view 
+            onClick={startScanning}
+            style={{
+              backgroundColor: '#4285f4',
+              padding: '15px',
+              borderRadius: '8px',
+              margin: '10px 0',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            <text style={{ color: 'white', fontSize: '16px', fontWeight: 'bold' }}>
               Start Scanning
-            </button>
-            
-            {devices.length > 0 && (
-              <view style={{ width: '100%', margin: '10px 0' }}>
-                <text style={{ fontWeight: 'bold', marginBottom: '5px' }}>Available Devices:</text>
-                {devices.map((device) => (
-                  <view 
-                    key={device.id} 
-                    onClick={() => selectDevice(device)}
-                    style={{ 
-                      padding: '8px', 
-                      margin: '4px 0',
-                      backgroundColor: selectedDevice?.id === device.id ? '#e8f0fe' : 'transparent',
-                      borderRadius: '4px'
-                    }}
-                  >
-                    <text>{device.name}</text>
-                  </view>
-                ))}
-              </view>
-            )}
-            
-            <button 
-              onClick={pickFile}
-              style={{ 
-                padding: '10px 20px', 
-                margin: '10px 0',
-                backgroundColor: '#34a853',
-                color: 'white',
-                borderRadius: '4px'
-              }}
-            >
+            </text>
+          </view>
+          
+          {/* Device List */}
+          {devices.length > 0 && (
+            <view style={{ 
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              borderRadius: '8px',
+              padding: '10px',
+              margin: '10px 0'
+            }}>
+              <text style={{ color: 'white', fontSize: '16px', fontWeight: 'bold', marginBottom: '10px' }}>
+                Available Devices:
+              </text>
+              
+              {devices.map((device) => (
+                <view 
+                  key={device.id} 
+                  onClick={() => selectDevice(device)}
+                  style={{ 
+                    backgroundColor: selectedDevice?.id === device.id ? 'rgba(66, 133, 244, 0.3)' : 'rgba(255, 255, 255, 0.05)',
+                    padding: '12px',
+                    borderRadius: '6px',
+                    margin: '5px 0',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                  }}
+                >
+                  <text style={{ color: 'white', fontSize: '14px' }}>{device.name}</text>
+                  
+                  {selectedDevice?.id === device.id && (
+                    <view style={{ 
+                      width: '16px', 
+                      height: '16px', 
+                      borderRadius: '8px', 
+                      backgroundColor: '#34a853' 
+                    }} />
+                  )}
+                </view>
+              ))}
+            </view>
+          )}
+          
+          {/* File Picker Button */}
+          <view 
+            onClick={pickFile}
+            style={{
+              backgroundColor: '#34a853',
+              padding: '15px',
+              borderRadius: '8px',
+              margin: '10px 0',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            <text style={{ color: 'white', fontSize: '16px', fontWeight: 'bold' }}>
               Pick File
-            </button>
-            
-            {fileToSend && (
-              <text style={{ margin: '5px 0' }}>Selected File: {fileToSend}</text>
-            )}
-            
-            <button 
-              onClick={sendFile} 
-              disabled={!selectedDevice || !fileToSend}
-              style={{ 
-                padding: '10px 20px', 
-                margin: '10px 0',
-                backgroundColor: (!selectedDevice || !fileToSend) ? '#cccccc' : '#ea4335',
-                color: 'white',
-                borderRadius: '4px',
-                opacity: (!selectedDevice || !fileToSend) ? 0.5 : 1
-              }}
-            >
+            </text>
+          </view>
+          
+          {/* Selected File Display */}
+          {fileToSend && (
+            <view style={{
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              padding: '10px',
+              borderRadius: '6px',
+              margin: '10px 0'
+            }}>
+              <text style={{ color: 'white', fontSize: '14px' }}>
+                Selected File: {fileToSend}
+              </text>
+            </view>
+          )}
+          
+          {/* Send File Button */}
+          <view 
+            onClick={sendFile}
+            style={{
+              backgroundColor: (!selectedDevice || !fileToSend) ? '#cccccc' : '#ea4335',
+              padding: '15px',
+              borderRadius: '8px',
+              margin: '10px 0',
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: (!selectedDevice || !fileToSend) ? 0.5 : 1
+            }}
+          >
+            <text style={{ color: 'white', fontSize: '16px', fontWeight: 'bold' }}>
               Send File
-            </button>
-            
-            {incomingTransfers.length > 0 && (
-              <view style={{ width: '100%', margin: '15px 0' }}>
-                <text style={{ fontWeight: 'bold', marginBottom: '5px' }}>Incoming Transfers:</text>
-                {incomingTransfers.map((transfer) => (
-                  <view 
-                    key={transfer.id}
-                    style={{ 
-                      padding: '10px', 
-                      margin: '5px 0',
-                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                      borderRadius: '4px'
-                    }}
-                  >
-                    <text style={{ marginBottom: '5px' }}>{transfer.fileName}</text>
-                    <view style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <button 
-                        onClick={() => acceptTransfer(transfer.id)}
-                        style={{ 
-                          padding: '5px 10px', 
-                          backgroundColor: '#34a853',
-                          color: 'white',
-                          borderRadius: '4px',
-                          marginRight: '5px'
-                        }}
-                      >
+            </text>
+          </view>
+          
+          {/* Incoming Transfers Section */}
+          {incomingTransfers.length > 0 && (
+            <view style={{ 
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              borderRadius: '8px',
+              padding: '10px',
+              margin: '15px 0'
+            }}>
+              <text style={{ color: 'white', fontSize: '16px', fontWeight: 'bold', marginBottom: '10px' }}>
+                Incoming Transfers:
+              </text>
+              
+              {incomingTransfers.map((transfer) => (
+                <view 
+                  key={transfer.id}
+                  style={{ 
+                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                    padding: '12px',
+                    borderRadius: '6px',
+                    margin: '5px 0'
+                  }}
+                >
+                  <text style={{ color: 'white', fontSize: '14px', marginBottom: '8px' }}>
+                    {transfer.fileName} ({(transfer.size / (1024 * 1024)).toFixed(1)} MB)
+                  </text>
+                  <text style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '12px', marginBottom: '10px' }}>
+                    From: {transfer.sender}
+                  </text>
+                  
+                  <view style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    <view 
+                      onClick={() => acceptTransfer(transfer.id)}
+                      style={{
+                        backgroundColor: '#34a853',
+                        padding: '8px 16px',
+                        borderRadius: '4px',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flex: 1,
+                        marginRight: '8px'
+                      }}
+                    >
+                      <text style={{ color: 'white', fontSize: '14px', fontWeight: 'bold' }}>
                         Accept
-                      </button>
-                      <button 
-                        onClick={() => rejectTransfer(transfer.id)}
-                        style={{ 
-                          padding: '5px 10px', 
-                          backgroundColor: '#ea4335',
-                          color: 'white',
-                          borderRadius: '4px'
-                        }}
-                      >
+                      </text>
+                    </view>
+                    
+                    <view 
+                      onClick={() => rejectTransfer(transfer.id)}
+                      style={{
+                        backgroundColor: '#ea4335',
+                        padding: '8px 16px',
+                        borderRadius: '4px',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flex: 1
+                      }}
+                    >
+                      <text style={{ color: 'white', fontSize: '14px', fontWeight: 'bold' }}>
                         Reject
-                      </button>
+                      </text>
                     </view>
                   </view>
-                ))}
-              </view>
-            )}
-          </view>
-        )}
+                </view>
+              ))}
+            </view>
+          )}
+        </view>
         
         <view style={{ flex: 1 }}></view>
       </view>
